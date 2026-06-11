@@ -1,6 +1,6 @@
 # Claude Code Skills
 
-This repository contains a collection of **Claude Code skills** used as working guidelines for building or improving Laravel and Go projects.
+This repository contains a collection of **AI Agent skills** used as working guidelines for building or improving Laravel and Go projects.
 
 ## Repository Contents
 
