@@ -1,8 +1,8 @@
 # Claude Code Skills
 
-Repository ini berisi kumpulan **skills untuk Claude Code** yang digunakan sebagai panduan kerja saat membuat atau merapikan project Laravel dan Go.
+This repository contains a collection of **Claude Code skills** used as working guidelines for building or improving Laravel and Go projects.
 
-## Isi Repository
+## Repository Contents
 
 ```text
 skills/
@@ -19,81 +19,90 @@ skills/
 └── salt-logmanager/
 ```
 
-Setiap folder skill memiliki file utama:
+Each skill folder contains the main file:
 
 ```text
 SKILL.md
 ```
 
-## Cara Menggunakan
+## Installation
 
-Jalankan Claude Code menggunakan `npx` dari root repository ini:
+Make sure Node.js and npm are installed:
+
+```bash
+node -v
+npm -v
+```
+
+Then add this skills repository using `npx`:
 
 ```bash
 npx skills add https://github.com/taupikpirdian/skills
 ```
 
-Lalu minta Claude menggunakan skill yang sesuai dengan kebutuhan.
+## Usage
 
-Contoh prompt:
+After the skills are installed, ask Claude Code to use the relevant skill for your task.
+
+Example prompts:
 
 ```text
-Gunakan skill laravel-service-repository untuk membuat fitur CRUD Product.
+Use the laravel-service-repository skill to create a Product CRUD feature.
 ```
 
 ```text
-Gunakan skill laravel-validation untuk membuat Form Request validasi user.
+Use the laravel-validation skill to create a User Form Request validation.
 ```
 
 ```text
-Gunakan skill golang-clean-architecture untuk menyusun struktur project Go ini.
+Use the golang-clean-architecture skill to structure this Go project.
 ```
 
 ```text
-Gunakan skill crud-speckit-generator untuk membuat spesifikasi CRUD Customer.
+Use the crud-speckit-generator skill to create a CRUD specification for Customer.
 ```
 
-## Daftar Skill Singkat
+## Available Skills
 
-| Skill | Kegunaan |
+| Skill | Purpose |
 | --- | --- |
-| `crud-speckit-generator` | Membuat dokumen spec, plan, dan tasks untuk fitur CRUD. |
-| `golang-clean-architecture` | Panduan struktur Go Clean Architecture. |
-| `laravel-service-repository` | Panduan pola Controller, Service, Repository, Model di Laravel. |
-| `laravel-validation` | Panduan membuat Laravel Form Request validation. |
-| `laravel-datatable-implementation` | Panduan implementasi DataTable server-side di Laravel. |
-| `laravel-installation-ckeditor` | Panduan instalasi CKEditor di Laravel. |
-| `laravel-installation-datatable` | Panduan instalasi DataTable di Laravel. |
-| `laravel-installation-datepicker` | Panduan instalasi datepicker di Laravel. |
-| `laravel-installation-sweatalert` | Panduan instalasi SweetAlert di Laravel. |
-| `salt-httpmanager` | Panduan membuat REST API Go dengan `httpmanager`. |
-| `salt-logmanager` | Panduan logging/tracing Go dengan `logmanager`. |
+| `crud-speckit-generator` | Creates spec, plan, and task documents for CRUD features. |
+| `golang-clean-architecture` | Provides guidance for Go Clean Architecture structure. |
+| `laravel-service-repository` | Guides Laravel Controller, Service, Repository, and Model structure. |
+| `laravel-validation` | Guides Laravel Form Request validation. |
+| `laravel-datatable-implementation` | Guides Laravel server-side DataTable implementation. |
+| `laravel-installation-ckeditor` | Guides CKEditor installation in Laravel. |
+| `laravel-installation-datatable` | Guides DataTable installation in Laravel. |
+| `laravel-installation-datepicker` | Guides datepicker installation in Laravel. |
+| `laravel-installation-sweatalert` | Guides SweetAlert installation in Laravel. |
+| `salt-httpmanager` | Guides Go REST API development using `httpmanager`. |
+| `salt-logmanager` | Guides Go logging and tracing using `logmanager`. |
 
-## Menambahkan Skill Baru
+## Adding a New Skill
 
-Buat folder baru di dalam `skills/`:
-
-```bash
-mkdir -p skills/nama-skill
-```
-
-Buat file `SKILL.md`:
+Create a new folder inside `skills/`:
 
 ```bash
-touch skills/nama-skill/SKILL.md
+mkdir -p skills/skill-name
 ```
 
-Format dasar:
+Create the `SKILL.md` file:
+
+```bash
+touch skills/skill-name/SKILL.md
+```
+
+Basic format:
 
 ```markdown
 ---
-name: nama-skill
+name: skill-name
 description: Use this skill when ...
 ---
 
-# Nama Skill
+# Skill Name
 
-Isi instruksi skill di sini.
+Write the skill instructions here.
 ```
 
-Gunakan nama skill dengan format `kebab-case` agar konsisten.
+Use `kebab-case` for skill names to keep them consistent.
