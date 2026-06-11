@@ -122,3 +122,9 @@ Not allowed:
 * Business logic
 * Database queries
 * Validation
+
+## Folder Interface
+```text
+app/Services/Contracts/<Feature>ServiceInterface.php
+app/Repositories/Contracts/<Feature>RepositoryInterface.php
+```
