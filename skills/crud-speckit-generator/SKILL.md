@@ -1,8 +1,7 @@
 ---
-
 name: crud-speckit-generator
-description: Use this skill when creating CRUD feature specifications using a Spec Kit style workflow under docs/speckit/<feature-name>/.
------------------------------------------------------------------------------------------------------------------------------------------
+description: Use this skill when the user asks to create CRUD specifications using Spec Kit / Speckit style. This includes Indonesian prompts such as "buatkan speckit CRUD", "buatkan CRUD speckit", "buatkan spesifikasi CRUD", "buatkan dokumen CRUD", or English prompts such as "generate CRUD spec", "create CRUD specification", and "make CRUD feature spec". The output must be created under docs/speckit/<feature-name>/.
+---
 
 # CRUD Speckit Generator
 
