@@ -10,6 +10,8 @@ Use this skill when building infrastructure/service code in Go for calling exter
 
 The implementation must use standard Go `net/http`, not Resty or other third-party HTTP clients.
 
+If Speckit docs exist under `docs/speckit/<feature-name>/`, read `spec.md`, `plan.md`, and `tasks.md` first and use them as the source of truth for the generated infrastructure code. Ask only for missing values that are still marked `TBD` and cannot be safely inferred.
+
 ## Goal
 
 Build a clean, safe, and testable infrastructure service for external API integration.

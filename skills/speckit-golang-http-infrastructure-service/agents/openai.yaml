@@ -1,0 +1,4 @@
+interface:
+  display_name: "Speckit Go HTTP Infra"
+  short_description: "Generate Speckit for Go outbound HTTP infra"
+  default_prompt: "Use $speckit-golang-http-infrastructure-service to create implementation-ready Speckit docs for a Go outbound HTTP integration."
