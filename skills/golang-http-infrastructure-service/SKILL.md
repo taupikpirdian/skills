@@ -1,109 +1,193 @@
 ---
+
 name: golang-http-infrastructure-service
-description: Use this skill when building or creating Go infrastructure/service layer for calling external HTTP APIs using standard net/http.
+description: Use this skill when building Go infrastructure/service layer for calling external HTTP APIs using standard net/http.
 ---
 
 # Go HTTP Infrastructure Service Skill
 
-Use this skill when building or creating infrastructure/service code in Go for calling external HTTP APIs.
+Use this skill when building infrastructure/service code in Go for calling external HTTP APIs.
 
-This skill uses the standard Go `net/http` package, not Resty or other third-party HTTP clients.
+The implementation must use standard Go `net/http`, not Resty or other third-party HTTP clients.
 
 ## Goal
 
-Build a clean, safe, and maintainable infrastructure service for external API integration using `net/http`.
+Build a clean, safe, and testable infrastructure service for external API integration.
 
-The generated code must:
+Generated code must:
 
-* Use `net/http` as the HTTP client.
-* Use `context.Context` for request cancellation and timeout propagation.
-* Build request payload clearly.
-* Send JSON request body.
-* Set required headers.
-* Read and validate response body safely.
-* Map HTTP error responses properly.
-* Map upstream business response codes properly.
-* Avoid logging sensitive data.
-* Support mock mode if needed.
-* Be easy to unit test.
+* use `net/http`
+* use `context.Context`
+* inject `*http.Client`
+* build vendor payload from application DTO
+* send JSON request body
+* set required headers
+* read response body safely
+* validate JSON response
+* map HTTP and business errors properly
+* avoid logging sensitive data
+* support mock mode if needed
+* include unit tests
 
-## Generated files
-* Application DTO for usecase input and output.
-- path: application/dto/<context>.go
-- example:
-  - ReqPrepaidRegistrationFR
-  - ResPrepaidRegistrationFR
-- contains business-level fields only.
-- does not contain vendor payload shape.
-- does not use json tags.
+## Generated Files
 
-* Outbound interface file.
-- path: `application/repository/<feature>.go`
-- defines interface consumed by application layer.
-- method shape: `Method(ctx context.Context, req dto.<RequestDTO>) (*<ResponseDTO>, error)`.
+### 1. Application DTO
 
-* Infrastructure DTO.
-- path: internal/infrastructure/service/<feature>/<feature>_dto.go
-- contains vendor request/response structs with exact JSON tags.
-- contains nested RequestPayload, bodyRequest, ListOfPrepaidRegUnReg, PrepaidRegUnReg, and vendor response struct.
-- infrastructure response struct must be mapped to application response DTO before returning.
+Path:
 
-* HTTP implementation.
-- path: `internal/infrastructure/service/<feature>/<feature>_http.go`
-- implements the outbound interface method.
-- responsibilities:
-  - build signature if needed.
-  - build vendor payload from application DTO.
-  - marshal request using json.Marshal.
-  - create request using http.NewRequestWithContext.
-  - set headers: Authorization, api_key, Accept, Content-Type, x-signature, channel.
-  - call endpoint using injected *http.Client.
-  - read response body using io.LimitReader.
-  - unmarshal response JSON.
-  - map network/client errors to infrastructure error.
-  - map HTTP 5xx to infrastructure error.
-  - map HTTP 4xx based on API contract.
-  - map non-success business response code to business error.
-  - return application-level response DTO.
+```text
+application/dto/<context>.go
+```
 
-* Factory and concrete service.
-- path: internal/infrastructure/service/<feature>/factory.go
-- contains:
-  - constants used by service.
-  - Service struct with *http.Client, base URL, credentials, channel, callback, mock flag.
-  - FactoryService struct if project convention requires it.
-  - Create() constructor.
-  - Validate() for required config/client.
-  - default HTTP timeout.
+Contains application-level request and response DTOs.
 
-* Mockery-generated mock.
-- add outbound interface path to mockery.yml.
-- generated mock is used for application/usecase tests, not for infrastructure HTTP behavior tests.
+Rules:
 
-* Unit test.
-- path: internal/infrastructure/service/<feature>/<feature>_test.go
-- should cover:
-  - factory validation.
-  - mock mode behavior.
-  - HTTP success using httptest.Server.
-  - HTTP 4xx error status.
-  - HTTP 5xx error status.
-  - successful HTTP with non-success response code.
-  - successful HTTP with invalid JSON response.
-  - successful HTTP with empty response code.
-  - connection/client error.
-  - expected headers are sent.
-  - expected payload is sent.
+* contains business-level fields only
+* does not contain vendor payload shape
+* does not use `json` tags
 
-However, the implementation must use `net/http`, not Resty.
+Example:
+
+```go
+package dto
+
+type ReqPrepaidRegistrationFR struct {
+	Msisdn string
+	Nik    string
+	Image  string
+}
+
+type ResPrepaidRegistrationFR struct {
+	ResponseCode    string
+	ResponseMessage string
+	TransactionID   string
+	Channel         string
+}
+```
+
+### 2. Outbound Interface
+
+Recommended path:
+
+```text
+application/repository/<feature>.go
+```
+
+Defines interface consumed by application layer.
+
+Example:
+
+```go
+type SubmitPrepaidRegistFRRepository interface {
+	SubmitPrepaidRegistFR(ctx context.Context, req dto.ReqPrepaidRegistrationFR) (*dto.ResPrepaidRegistrationFR, error)
+}
+```
+
+Rules:
+
+* interface must return application response DTO
+* do not return infrastructure/vendor response DTO
+* if project uses port naming, path may be `application/port/outbound/<feature>.go`
+
+### 3. Infrastructure DTO
+
+Path:
+
+```text
+internal/infrastructure/service/<feature>/<feature>_dto.go
+```
+
+Contains vendor request and response structs.
+
+Rules:
+
+* uses exact vendor JSON shape
+* uses `json` tags
+* may contain nested structs
+* vendor response must be mapped to application response DTO before returning
+
+Example:
+
+```go
+type RequestPayload struct {
+	Body bodyRequest `json:"body"`
+}
+```
+
+### 4. HTTP Implementation
+
+Path:
+
+```text
+internal/infrastructure/service/<feature>/<feature>_http.go
+```
+
+Responsibilities:
+
+* build signature if needed
+* build vendor payload from application DTO
+* marshal request using `json.Marshal`
+* create request using `http.NewRequestWithContext`
+* set required headers
+* call endpoint using injected `*http.Client`
+* read response body using `io.LimitReader`
+* unmarshal response JSON
+* map network/client errors to infrastructure error
+* map HTTP 5xx to infrastructure error
+* map HTTP 4xx based on API contract
+* map non-success business response code to business error
+* return application response DTO
+
+### 5. Factory and Concrete Service
+
+Path:
+
+```text
+internal/infrastructure/service/<feature>/factory.go
+```
+
+Contains:
+
+* constants
+* `Config` struct
+* `Service` struct
+* constructor
+* config validation
+* default HTTP timeout
+* mock flag if needed
+
+### 6. Unit Test
+
+Path:
+
+```text
+internal/infrastructure/service/<feature>/<feature>_test.go
+```
+
+Use `httptest.Server` for infrastructure HTTP tests.
+
+Cover:
+
+* factory validation
+* mock mode behavior
+* HTTP success
+* HTTP 4xx
+* HTTP 5xx
+* non-success business response code
+* invalid JSON response
+* empty response code
+* network/client error
+* expected headers
+* expected payload
+
+Mockery-generated mock is used for application/usecase tests, not for infrastructure HTTP behavior tests.
 
 ## Required Inputs Before Generating Code
 
-Before generating the infrastructure code, ask only the required information below.
+Ask only what cannot be safely inferred.
 
-Do not ask questions for values that can be inferred from project convention or generated automatically.
-
-### 1. What is the service or integration name?
+### 1. Service or integration name
 
 Example:
 
@@ -111,7 +195,7 @@ Example:
 SubmitPrepaidRegistFR
 ```
 
-This name will be used to generate:
+Used for:
 
 * method name
 * interface name
@@ -119,7 +203,7 @@ This name will be used to generate:
 * file name
 * test name
 
-### 2. What external API endpoint will be called?
+### 2. External API endpoint
 
 Example:
 
@@ -127,9 +211,9 @@ Example:
 /siebel/v1.0/service/Prepaid/RegistrationV3
 ```
 
-The base URL must come from service config.
+Base URL must come from service config.
 
-### 3. What HTTP method is used?
+### 3. HTTP method
 
 Example:
 
@@ -137,9 +221,15 @@ Example:
 POST
 ```
 
-### 4. What application request fields are needed?
+Default:
 
-Example input:
+```text
+POST
+```
+
+### 4. Application request fields
+
+Example:
 
 ```text
 Request fields:
@@ -148,9 +238,11 @@ Request fields:
 - image string required
 ```
 
-### 5. What application response fields should be returned?
+Generate application request DTO automatically.
 
-Example input:
+### 5. Application response fields
+
+Example:
 
 ```text
 Response fields:
@@ -160,11 +252,17 @@ Response fields:
 - channel string
 ```
 
-### 6. What vendor request and response payload shape is required?
+Generate application response DTO automatically.
 
-This is the exact JSON contract from the external API.
+### 6. Vendor request and response payload shape
 
-### 7. What headers are required?
+Ask for the exact JSON contract from the external API.
+
+This is used to generate infrastructure DTO with `json` tags.
+
+### 7. Headers and signature requirement
+
+Ask for required headers.
 
 Example:
 
@@ -178,50 +276,40 @@ Headers:
 - channel
 ```
 
-Default headers if not specified:
+Default headers:
 
 ```text
 Accept: application/json
 Content-Type: application/json
 ```
 
-### 8. Does the API require signature generation?
-
 If signature is required, ask for:
 
 * signature function
 * config values used by signature
-* header name for signature
+* signature header name
 
-Example:
+### 8. Success response code and sensitive fields
 
-```text
-x-signature
-```
+Ask what upstream response code means success.
 
-### 9. What response code means success?
-
-Example:
+Default:
 
 ```text
 0000
 ```
 
-### 10. What fields are sensitive and must be masked or omitted from logs?
-
-Example:
-
-```text
-Sensitive fields:
-- NIK
-- MSISDN
-- image
-- document
-```
+Ask for sensitive fields that must be masked or omitted from logs.
 
 Default sensitive fields:
 
 ```text
+nik
+msisdn
+image
+document
+file
+base64
 token
 authorization
 api_key
@@ -230,89 +318,86 @@ secret
 password
 ```
 
-## Recommended Service Struct
+## Recommended Service Structure
 
-Use dependency injection for the HTTP client.
+Use dependency injection for HTTP client and config.
 
-Adjust config fields based on integration needs. Do not generate unused fields.
+Generate only config fields needed by the integration. Do not generate unused fields.
 
-Examples:
-- If the API does not require callback URL, do not generate callback field.
-- If the API does not require signature, do not generate secret field.
-- If the API does not require Basic Auth, do not generate authBasic field.
-- If the API only needs static headers, generate headers map instead of explicit auth fields.
+Example:
 
 ```go
+type Config struct {
+	BaseURL    string
+	AuthBasic  string
+	APIKey     string
+	Secret     string
+	Channel    string
+	Callback   string
+	EnableMock bool
+	Timeout    time.Duration
+}
+
 type Service struct {
 	httpClient *http.Client
-
-	baseUrl    string
-	headers    map[string]string
-	apiKey     string
-	secret     string
-	channel    string
-	callback   string
-	enableMock bool
+	config     Config
 }
 ```
 
-The `httpClient` should be injected from constructor.
+Constructor example:
 
 ```go
-func NewService(
-	httpClient *http.Client,
-	baseUrl string,
-	authBasic string,
-	apiKey string,
-	secret string,
-	channel string,
-	callback string,
-	enableMock bool,
-) (*Service, error) {
+func NewService(httpClient *http.Client, config Config) (*Service, error) {
+	if config.Timeout == 0 {
+		config.Timeout = 30 * time.Second
+	}
+
 	if httpClient == nil {
 		httpClient = &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: config.Timeout,
 		}
 	}
 
-	if baseUrl == "" {
+	if config.BaseURL == "" {
 		return nil, errors.New("baseUrl is required")
 	}
 
-	if authBasic == "" {
+	if config.AuthBasic == "" {
 		return nil, errors.New("authBasic is required")
 	}
 
-	if apiKey == "" {
+	if config.APIKey == "" {
 		return nil, errors.New("apiKey is required")
 	}
 
-	if secret == "" {
+	if config.Secret == "" {
 		return nil, errors.New("secret is required")
 	}
 
-	if channel == "" {
+	if config.Channel == "" {
 		return nil, errors.New("channel is required")
 	}
 
+	config.BaseURL = strings.TrimRight(config.BaseURL, "/")
+
 	return &Service{
 		httpClient: httpClient,
-		baseUrl:    strings.TrimRight(baseUrl, "/"),
-		authBasic:  authBasic,
-		apiKey:     apiKey,
-		secret:     secret,
-		channel:    channel,
-		callback:   callback,
-		enableMock: enableMock,
+		config:     config,
 	}, nil
 }
 ```
 
+Config generation rules:
+
+* if API does not require callback URL, do not generate `Callback`
+* if API does not require signature, do not generate `Secret`
+* if API does not require Basic Auth, do not generate `AuthBasic`
+* if API does not require API key, do not generate `APIKey`
+* if API only needs static headers, use `Headers map[string]string`
+
 ## Implementation Rules
 
 ### 1. Use `net/http`
-
-Do not use Resty unless the project standard explicitly uses Resty.
 
 Use:
 
@@ -341,29 +426,19 @@ Every request must use:
 http.NewRequestWithContext(ctx, method, url, body)
 ```
 
-Do not use:
-
-```go
-http.NewRequest(...)
-```
-
-unless there is a very specific reason.
-
 ### 3. Always set timeout
 
-The HTTP client must have timeout.
+Default timeout:
 
 ```go
-httpClient := &http.Client{
-	Timeout: 30 * time.Second,
-}
+30 * time.Second
 ```
 
 Avoid using `http.DefaultClient` directly for external integrations.
 
 ### 4. Do not log raw sensitive data
 
-Never log raw payload if it contains sensitive data.
+Do not log full request or response payload if it may contain sensitive data.
 
 Avoid:
 
@@ -382,11 +457,11 @@ logmanager.LogInfoWithContext(ctx, fmt.Sprintf(
 ))
 ```
 
+For file/base64 fields, log only size.
+
 ### 5. Generate transaction ID once
 
-If the request needs transaction ID, generate it once and store it in a variable.
-
-Recommended:
+If transaction ID is needed, generate once and reuse it.
 
 ```go
 trxID := helper.GenerateTrxId(req.Msisdn)
@@ -394,111 +469,174 @@ trxID := helper.GenerateTrxId(req.Msisdn)
 payload := s.buildPayload(req, trxID)
 ```
 
-Avoid:
-
-```go
-TransactionID: helper.GenerateTrxId(req.Msisdn)
-```
-
-because it makes tracing harder.
+Do not generate transaction ID directly inside payload field assignment.
 
 ### 6. Build endpoint safely
 
-Avoid direct URL concatenation without trimming.
-
-Recommended:
+Use trimmed base URL.
 
 ```go
-endpoint := strings.TrimRight(s.baseUrl, "/") + "/siebel/v1.0/service/Prepaid/RegistrationV3"
+endpoint := s.config.BaseURL + "/siebel/v1.0/service/Prepaid/RegistrationV3"
 ```
 
-Avoid:
+`BaseURL` must already be normalized in constructor:
 
 ```go
-endpoint := s.baseUrl + "/siebel/v1.0/service/Prepaid/RegistrationV3"
+config.BaseURL = strings.TrimRight(config.BaseURL, "/")
 ```
 
-This prevents double slash when baseUrl already ends with `/`.
+### 7. Limit response body size
 
-### 7. Validate response body
-
-If the API is expected to return JSON, always validate JSON response.
+Always limit response body before reading.
 
 ```go
-var result ResponseSubmitPrepaidRegistFR
+const maxResponseBodyBytes = 2 * 1024 * 1024
+
+respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+```
+
+### 8. Validate response body
+
+If upstream is expected to return JSON, always unmarshal and validate it.
+
+```go
+var result responseSubmitPrepaidRegistFR
 
 if len(respBody) > 0 {
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, pkgErrors.NewInfrastructureError("SPRFR", "003", "Invalid response from upstream")
+		return nil, pkgErrors.NewInfrastructureError(moduleCode, "003", "Invalid response from upstream")
 	}
 }
 ```
 
-### 8. Map HTTP error properly
+### 9. Map HTTP errors
 
-Use different handling for 4xx and 5xx.
+Default mapping:
 
-Recommended:
+| Scenario                           | Error Type                                                          |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| network/client error               | infrastructure error                                                |
+| timeout                            | infrastructure error                                                |
+| invalid JSON response              | infrastructure error                                                |
+| empty response code                | infrastructure error                                                |
+| HTTP 5xx                           | infrastructure error                                                |
+| HTTP 400/422                       | business error                                                      |
+| HTTP 401/403                       | infrastructure/config/auth error unless API contract says otherwise |
+| HTTP 404                           | depends on API contract                                             |
+| HTTP 429                           | infrastructure or retryable error                                   |
+| non-success business response code | business error                                                      |
+
+Example:
 
 ```go
 if resp.StatusCode >= 500 {
-	return nil, pkgErrors.NewInfrastructureError("SPRFR", "002", result.ResponseMessage)
+	return nil, pkgErrors.NewInfrastructureError(moduleCode, "002", result.ResponseMessage)
 }
 
 if resp.StatusCode >= 400 {
-	return nil, pkgErrors.NewBusinessError("SPRFR", result.ResponseCode, result.ResponseMessage)
+	return nil, pkgErrors.NewBusinessError(moduleCode, normalizeErrorCode(result.ResponseCode), normalizeErrorMessage(result.ResponseMessage, "Business error from upstream"))
 }
 ```
 
-General rule:
+### 10. Validate business response code
 
-| Status Code | Error Type                                                                    |
-| ----------- | ----------------------------------------------------------------------------- |
-| 400         | Business error                                                                |
-| 401         | Infrastructure/config/auth error                                              |
-| 403         | Infrastructure/config/auth error or business error, depending on API contract |
-| 404         | Business error or infrastructure error, depending on endpoint contract        |
-| 422         | Business error                                                                |
-| 429         | Infrastructure error or retryable error                                       |
-| 500         | Infrastructure error                                                          |
-| 502         | Infrastructure error                                                          |
-| 503         | Infrastructure error                                                          |
-| 504         | Infrastructure error                                                          |
-
-### 9. Validate upstream business response code
-
-If upstream returns business response code, validate it after HTTP status check.
-
-Example success code:
+Default success code:
 
 ```go
 const successResponseCode = "0000"
 ```
 
-Then:
+Validation:
 
 ```go
 if result.ResponseCode == "" {
-	return nil, pkgErrors.NewInfrastructureError("SPRFR", "003", "Empty response code from upstream")
+	return nil, pkgErrors.NewInfrastructureError(moduleCode, "003", "Empty response code from upstream")
 }
 
 if result.ResponseCode != successResponseCode {
-	return nil, pkgErrors.NewBusinessError("SPRFR", result.ResponseCode, result.ResponseMessage)
+	return nil, pkgErrors.NewBusinessError(moduleCode, result.ResponseCode, result.ResponseMessage)
 }
 ```
 
-### 10. Use constants for fixed integration values
+### 11. Use constants for fixed values
 
 Avoid scattered hardcoded values.
 
-Recommended:
+Example:
 
 ```go
 const (
-	moduleCode          = "SPRFR"
-	successResponseCode = "0000"
-	defaultUserID       = "User01"
-	defaultIntRef       = "PrepaidRegUnRegV3"
-	defaultADN          = "4444"
+	moduleCode           = "SPRFR"
+	successResponseCode  = "0000"
+	maxResponseBodyBytes = 2 * 1024 * 1024
 )
 ```
+
+Add vendor-specific constants only when needed.
+
+### 12. No automatic retry by default
+
+Do not add automatic retry for submit, registration, payment, activation, or mutation APIs unless upstream supports idempotency.
+
+Retry is allowed only if:
+
+* same transaction ID is reused
+* upstream guarantees idempotency
+* retry only happens for network error or 5xx
+* business errors are never retried
+
+## Response Mapping Rule
+
+Infrastructure response DTO must be mapped to application response DTO.
+
+Example:
+
+```go
+func toApplicationResponse(resp responseSubmitPrepaidRegistFR) *dto.ResPrepaidRegistrationFR {
+	return &dto.ResPrepaidRegistrationFR{
+		ResponseCode:    resp.ResponseCode,
+		ResponseMessage: resp.ResponseMessage,
+		TransactionID:   resp.TransactionID,
+		Channel:         resp.Channel,
+	}
+}
+```
+
+Do not return vendor response struct outside infrastructure package.
+
+## Mock Mode Rule
+
+If mock mode is needed, return application response DTO.
+
+Example:
+
+```go
+if s.config.EnableMock {
+	return &dto.ResPrepaidRegistrationFR{
+		ResponseCode:    successResponseCode,
+		ResponseMessage: "Success",
+		TransactionID:   "mock-transaction-id",
+		Channel:         s.config.Channel,
+	}, nil
+}
+```
+
+## Test Rules
+
+Infrastructure HTTP tests must use `httptest.Server`.
+
+Recommended test coverage:
+
+* constructor validation
+* mock mode
+* HTTP success
+* HTTP 4xx
+* HTTP 5xx
+* invalid JSON
+* empty response code
+* non-success business response code
+* network/client error
+* expected headers
+* expected payload
+
+Use mockery only for application/usecase tests that depend on the outbound interface.
