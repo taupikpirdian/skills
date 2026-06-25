@@ -1,11 +1,11 @@
 ---
 name: speckit-rest-api-generator
-description: Use this skill when the user asks to create REST API specifications using Spec Kit / Speckit style. This includes Indonesian prompts such as "buatkan speckit REST API", "buatkan API speckit", "buatkan spesifikasi REST API", "buatkan dokumen API", or English prompts such as "generate REST API spec", "create REST API specification", and "make REST API feature spec". The output must be created under docs/speckit/<feature-name>/.
+description: Use this skill when the user asks to create a single REST API specification using Spec Kit / Speckit style. This includes Indonesian prompts such as "buatkan speckit REST API", "buatkan API speckit", "buatkan spesifikasi REST API", "buatkan dokumen API", or English prompts such as "generate REST API spec", "create REST API specification", and "make REST API feature spec". The output must be created under docs/speckit/<feature-name>/ and must describe only one requested API operation.
 ---
 
 # Speckit REST API Generator
 
-Use this skill when the user wants to create a REST API feature specification before implementation.
+Use this skill when the user wants to create a Speckit specification for one REST API operation before implementation.
 
 The output must be written under:
 
@@ -17,49 +17,36 @@ Use kebab-case for `<feature-name>`.
 
 ## Goal
 
-Create concise REST API specs so the agent understands the resource, endpoints, request payload, response format, validation, authentication, authorization, error handling, and implementation tasks.
+Create concise specs for exactly one REST API operation so the implementation agent understands the URL, headers, payload, success response, error response, optional validation rules, and implementation tasks.
+
+Do not turn one requested API into a full CRUD feature. Do not add List, Detail, Create, Update, Delete, pagination, search, filter, sort, or relationship endpoints unless the user explicitly includes that behavior in the single API contract.
 
 ## Workflow
 
 Follow this order:
 
 ```text
-clarify → specify → plan → tasks
+clarify -> specify -> plan -> tasks
 ```
 
 ## 1. Clarify
 
-Before generating files, ask the user:
+The expected user input is limited to:
 
-- What is the REST API feature name?
-- What resource or model or design table will this API use?
-- What base endpoint should be used?
-   * Example: `/api/job-vacancies`
-- Which HTTP methods are needed?
-   * GET
-   * POST
-   * PUT
-   * PATCH
-   * DELETE
-- Are there any required request headers?
-   * Example: `Authorization`, `Accept`, `Content-Type`, `api_key`, `x-signature`
-- If the method is `POST`, what request fields are accepted for create?
-- If the method is `PUT` or `PATCH`, what request fields are accepted for update?
-- Which request fields are mandatory?
-- What validation rules are needed?
-- What response fields should be returned?
-- Is authentication required?
-- What authorization or permission rules are needed?
-- If the method is `GET`, is pagination needed for the list endpoint?
-- If the method is `GET`, is search needed?
-- If the method is `GET`, are filters needed?
-- If the method is `GET`, is sorting needed?
-- What success response format should be used?
-- What error response format should be used?
+- URL or endpoint path, optionally prefixed with the HTTP method.
+  * Example: `POST /api/job-vacancies/apply`
+- Required request headers.
+- Request payload, query parameters, or path parameters.
+- Success response example or schema.
+- Error response example or schema.
+- Optional custom validation rules.
+- Used tables on database.
 
-Do not generate the final speckit until these API details are clear:
+Ask only when the API operation itself cannot be identified. Otherwise, generate the speckit from the available input and use `TBD` for missing details.
 
-If information is missing, use `TBD` instead of guessing.
+Derive the feature name from the HTTP method and URL when the user does not provide one. Example: `POST /api/job-vacancies/apply` becomes `post-job-vacancies-apply`.
+
+If the HTTP method is not included, set the method to `TBD`; do not infer the method from the payload.
 
 ## 2. Output Files
 
@@ -74,7 +61,7 @@ docs/speckit/<feature-name>/
 
 ## 3. spec.md
 
-Focus on what the REST API should do and why.
+Focus on what the single REST API operation should do and why.
 
 Must include:
 
@@ -83,56 +70,55 @@ Must include:
 * Target consumer
 * Scope
 * Out of scope
-* Related resource/model
-* Base endpoint
-* Authentication requirement
-* REST actions
-* Endpoint list
+* Single API operation
+* Method
+* URL
+* Request headers
+* Request path parameters
 * Request query parameters
-* Request body
-* Required request fields
+* Request payload
 * Response fields
 * Success response format
 * Error response format
-* Validation expectations
-* Pagination expectations
-* Search/filter/sort expectations
-* Relationship response expectations
+* Custom validation expectations
 * Status codes
 * Success criteria
 
-For each endpoint, include:
+For the single API operation, include:
 
 * Method
 * Path
 * Purpose
-* Auth requirement
+* Headers
 * Query parameters
 * Path parameters
-* Request body
+* Request payload
 * Success response
 * Error response
+* Custom validation
 * Status codes
+
+Keep `spec.md` scoped to this one operation. Use `TBD` for missing details instead of inventing extra API behavior.
 
 ## 4. plan.md
 
-Focus on how the REST API feature will be built.
+Focus on how the single REST API operation will be built.
 
 Must include:
 
 * Tech stack
 * Architecture pattern
-* Resource/model used
-* Table used
-* Endpoint design
-* Request field mapping
-* Response field mapping
-* Request validation approach
-* Response/resource approach
+* Single endpoint design
+* Header handling
+* Payload or parameter mapping
+* Success response mapping
+* Error response mapping
+* Custom validation approach
 * Error handling approach
-* Authentication approach
-* Authorization/policy approach
-* Pagination/search/filter/sort approach
+* Authentication approach, only if identifiable from headers or user input
+* Authorization/policy approach, only if provided by the user
+
+Do not include implementation plans for endpoints that were not requested.
 
 ## 5. tasks.md
 
@@ -145,23 +131,17 @@ Example:
 ```md
 # Tasks
 
-- [ ] Define REST API feature name
-- [ ] Define resource, model, or design table used by the API
-- [ ] Define base endpoint
-- [ ] Define required HTTP methods
-- [ ] Define required request headers if needed
-- [ ] Define request fields for `POST` create endpoint if needed
-- [ ] Define request fields for `PUT` or `PATCH` update endpoint if needed
-- [ ] Define mandatory request fields
-- [ ] Define validation rules for request fields
-- [ ] Define response fields
-- [ ] Define authentication requirement
-- [ ] Define authorization or permission rules
-- [ ] Define pagination behavior for `GET` list endpoint if needed
-- [ ] Define search behavior for `GET` endpoint if needed
-- [ ] Define filter behavior for `GET` endpoint if needed
-- [ ] Define sorting behavior for `GET` endpoint if needed
+- [ ] Define one API operation only
+- [ ] Define method and URL
+- [ ] Define request headers
+- [ ] Define request payload, query parameters, and path parameters
 - [ ] Define success response format
 - [ ] Define error response format
-- [ ] Review REST API specification completeness
+- [ ] Define custom validation rules, if provided
+- [ ] Map request data into the handler or service
+- [ ] Map success response from the handler or service
+- [ ] Map error responses and status codes
+- [ ] Implement validation, only for provided validation rules
+- [ ] Add tests for this single API operation
+- [ ] Review speckit completeness against the provided input
 ```
