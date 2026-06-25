@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review GitLab merge requests and code diffs with a security-first, issue-only stance. Use when Codex is asked to review an MR URL, GitLab merge request, code diff, or code changes against OWASP, Clean Architecture, DDD domain/application layer rules, Go code standards, and testing requirements; includes GitLab MCP workflow, severity classification, summary comments, and inline finding guidance.
+description: Review current code changes, GitLab merge requests, and code diffs with a security-first, issue-only stance. Use when Codex is asked to review local git changes, an MR URL, GitLab merge request, code diff, or code changes against OWASP, Clean Architecture, DDD domain/application layer rules, Go code standards, and testing requirements; focuses findings on the changed code and includes GitLab MCP workflow, severity classification, summary comments, and inline finding guidance.
 ---
 
 # GitLab Code Review
@@ -8,6 +8,10 @@ description: Review GitLab merge requests and code diffs with a security-first, 
 ## Review Stance
 
 Act as a code reviewer. Report only problems, bugs, risks, missing tests, and concrete improvements. Do not include compliments, positive feedback, or "looks good" comments.
+
+Default to reviewing the code changes in front of you. For local repository reviews, inspect the current Git working tree and staged changes first; for MR reviews, inspect the MR diff first; for pasted diffs, review only the pasted diff. Read unchanged files only as supporting context needed to understand the changed code.
+
+Tie every finding to changed code. Do not report pre-existing issues in untouched code unless the current change directly exposes, worsens, or depends on that issue.
 
 Prioritize findings in this order:
 
@@ -46,6 +50,18 @@ Use these MCP tools when available:
 - `create_merge_request_note`: main MR comments and inline review comments.
 
 If MCP tools are not available, review the provided diff or local branch changes directly and clearly state the scope reviewed.
+
+## Local Changes Workflow
+
+When reviewing the current repository instead of a GitLab MR:
+
+1. Run `git status --short` to identify changed, staged, untracked, and deleted files.
+2. Run `git diff --staged` when staged changes exist.
+3. Run `git diff` for unstaged tracked changes.
+4. Inspect untracked files directly when they are part of the requested review.
+5. If a base branch is obvious from context, use `git diff <base>...HEAD` only to supplement the working-tree diff; do not let it replace current staged or unstaged changes.
+6. Read surrounding unchanged code only when needed to validate behavior, architecture boundaries, or tests.
+7. State the exact review scope, including whether staged, unstaged, untracked, or branch diff changes were reviewed.
 
 ## Posting Strategy
 
