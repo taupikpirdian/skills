@@ -1,5 +1,5 @@
 ---
-name: implement-message-mapper-dictionary
+name: golang-error-message-mapper
 description: Guidance for implementing message_mapper in the activation service using dictionary-based error groups. Use when adding new error mappings, new journey mappers, bilingual ID/EN mappings, or integrating mapper output into handler responses.
 ---
 
