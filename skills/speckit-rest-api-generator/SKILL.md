@@ -1,6 +1,6 @@
 ---
 name: speckit-rest-api-generator
-description: Use this skill when the user asks to create a single REST API specification using Spec Kit / Speckit style. This includes Indonesian prompts such as "buatkan speckit REST API", "buatkan API speckit", "buatkan spesifikasi REST API", "buatkan dokumen API", or English prompts such as "generate REST API spec", "create REST API specification", and "make REST API feature spec". The output must be created under docs/speckit/<feature-name>/ and must describe only one requested API operation.
+description: Use this skill when the user asks to create a single REST API specification using Spec Kit / Speckit style. This includes Indonesian prompts such as "buatkan speckit REST API", "buatkan API speckit", "buatkan spesifikasi REST API", "buatkan dokumen API", or English prompts such as "generate REST API spec", "create REST API specification", and "make REST API feature spec". Clarify incomplete REST API requirements before creating files. The final output must be created under docs/speckit/<feature-name>/ and must describe only one requested API operation.
 ---
 
 # Speckit REST API Generator
@@ -31,22 +31,32 @@ clarify -> specify -> plan -> tasks
 
 ## 1. Clarify
 
-The expected user input is limited to:
+Do not create directories or files during clarification.
 
-- URL or endpoint path, optionally prefixed with the HTTP method.
+Before generating files, verify that the API contract is clear enough to implement. Ask targeted clarification questions for missing or ambiguous requirements, then wait for the user's answer.
+
+Required clarity:
+
+* HTTP method.
+* URL or endpoint path.
   * Example: `POST /api/job-vacancies/apply`
-- Required request headers.
-- Request payload, query parameters, or path parameters.
-- Success response example or schema.
-- Error response example or schema.
-- Optional custom validation rules.
-- Used tables on database.
+* Purpose of the API operation.
+* Required request headers, or explicit confirmation that no custom headers are needed.
+* Authentication or authorization expectations, or explicit confirmation that none are needed.
+* Request payload, query parameters, and path parameters, or explicit confirmation that each unused category is not needed.
+* Success response example or schema.
+* Error response example or schema.
+* Status codes.
+* Custom validation rules, or explicit confirmation that no custom validation is needed.
+* Used database tables, or explicit confirmation that database access is not needed.
 
-Ask only when the API operation itself cannot be identified. Otherwise, generate the speckit from the available input and use `TBD` for missing details.
+If any required clarity item is missing, ask for only the missing information. Group related questions so the user can answer quickly, but do not generate `spec.md`, `plan.md`, or `tasks.md` yet.
 
 Derive the feature name from the HTTP method and URL when the user does not provide one. Example: `POST /api/job-vacancies/apply` becomes `post-job-vacancies-apply`.
 
-If the HTTP method is not included, set the method to `TBD`; do not infer the method from the payload.
+If the HTTP method is not included, ask for it. Do not infer the method from the payload.
+
+Do not use `TBD` for missing requirements. Do not proceed with assumptions while any required clarity item is missing.
 
 ## 2. Output Files
 
@@ -98,7 +108,7 @@ For the single API operation, include:
 * Custom validation
 * Status codes
 
-Keep `spec.md` scoped to this one operation. Use `TBD` for missing details instead of inventing extra API behavior.
+Keep `spec.md` scoped to this one operation. Do not invent extra API behavior.
 
 ## 4. plan.md
 
@@ -145,3 +155,16 @@ Example:
 - [ ] Add tests for this single API operation
 - [ ] Review speckit completeness against the provided input
 ```
+
+## Agent Behavior
+
+When applying this skill:
+
+1. Ask required clarification questions first when any required clarity item is missing or ambiguous.
+2. Wait for user answers before creating `docs/speckit/<feature-name>/`.
+3. Do not create placeholder speckit files with `TBD` values.
+4. Normalize feature name to kebab-case after the method and URL are known.
+5. Generate only `spec.md`, `plan.md`, and `tasks.md`.
+6. Save files under `docs/speckit/<feature-name>/`.
+7. Keep each file concise, implementation-ready, and limited to one REST API operation.
+8. After creating files, summarize created files and the confirmed API contract.
