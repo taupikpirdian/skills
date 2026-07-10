@@ -1,5 +1,5 @@
 ---
-name: c
+name: laravel-view-structure
 description: Use when creating, refactoring, or standardizing Laravel Blade folder structure under resources/views for admin panels, CRUD pages, modules, layouts, components, partials, and reusable view conventions across Laravel projects.
 ---
 
