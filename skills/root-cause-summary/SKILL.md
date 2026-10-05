@@ -1,3 +1,8 @@
+---
+name: root-cause-summary
+description: Turn technical investigation logs, API responses, and findings into a concise Jira-ready summary that distinguishes symptoms, error propagation, and confirmed or suspected root causes. Use when asked to summarize an investigated issue or prepare a root-cause summary for Jira.
+---
+
 # Jira Technical Investigation Summary
 
 ## Purpose
